@@ -1,9 +1,9 @@
-# https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
+# https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier
 import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.svm import SVC
+from sklearn import ensemble
 from sklearn.preprocessing import StandardScaler
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.multiclass import OneVsOneClassifier
@@ -114,18 +114,18 @@ if __name__ == "__main__":
     df_train_X_std = sc.transform(df_train_X)
     df_valid_X_std = sc.transform(df_valid_X)
 
-    svm = OneVsRestClassifier(SVC(kernel='sigmoid', probability=True, random_state=0, C=5.0))
+    forest = OneVsRestClassifier(ensemble.RandomForestClassifier(n_estimators = 1, random_state=13))
     
     cv = ShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
     fig, axes = plt.subplots(1, 1, figsize=(10, 15))
-    title = r"Learning Curves (SVM)"
-    plot_learning_curve(svm, title, df_train_X_std, df_train_Y['Y'].values, axes=axes, ylim=None, cv=cv, n_jobs=14)
+    title = r"Learning Curves (Random Forest)"
+    plot_learning_curve(forest, title, df_train_X_std, df_train_Y['Y'].values, axes=axes, ylim=None, cv=cv, n_jobs=14)
     plt.show()
     
-    svm.fit(df_train_X_std, df_train_Y['Y'].values)
-    predict = svm.predict(df_valid_X_std)
+    forest.fit(df_train_X_std, df_train_Y['Y'].values)
+    predict = forest.predict(df_valid_X_std)
     ground_true = df_valid_Y['Y'].values
-    
+
     error = 0
     for i, v in enumerate(predict):
         if v != ground_true[i]:

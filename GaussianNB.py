@@ -114,7 +114,7 @@ if __name__ == "__main__":
     df_train_X_std = sc.transform(df_train_X)
     df_valid_X_std = sc.transform(df_valid_X)
 
-    gnb = OneVsRestClassifier(GaussianNB())
+    gnb = GaussianNB()
     
     cv = ShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
     fig, axes = plt.subplots(1, 1, figsize=(10, 15))

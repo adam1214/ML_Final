@@ -1,9 +1,9 @@
-# https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier
+# https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
 import csv
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn import ensemble
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.multiclass import OneVsOneClassifier
@@ -11,7 +11,7 @@ from sklearn.model_selection import learning_curve
 from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import log_loss
-import math
+from sklearn.model_selection import cross_val_score, GridSearchCV
 
 def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None, n_jobs=None, train_sizes=np.linspace(.1, 1.0, 5)):
     """
@@ -112,16 +112,25 @@ if __name__ == "__main__":
     df_valid_X = df_valid.drop(labels=["ID","TS","Y"], axis="columns")
     df_valid_Y = df_valid['Y'].to_frame()
 
-    forest = OneVsRestClassifier(ensemble.RandomForestClassifier(n_estimators = 1, random_state=13, max_features="auto"))
+    params_grid = [ {'n_neighbors': [15, 20, 25, 30, 35], 'weights': ['distance'], 'algorithm': ['auto']}]
+    knn = GridSearchCV(KNeighborsClassifier(), params_grid, cv=5, n_jobs=-1)
     '''
     cv = ShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
     fig, axes = plt.subplots(1, 1, figsize=(10, 15))
-    title = r"Learning Curves (Random Forest)"
-    plot_learning_curve(forest, title, df_train_X_std, df_train_Y['Y'].values, axes=axes, ylim=None, cv=cv, n_jobs=14)
+    title = r"Learning Curves (GaussianNB)"
+    plot_learning_curve(gnb, title, df_train_X_std, df_train_Y['Y'].values, axes=axes, ylim=None, cv=cv, n_jobs=14)
     plt.show()
     '''
-    forest.fit(df_train_X, df_train_Y['26'].values)
-    predict = forest.predict(df_valid_X)
+    knn.fit(df_train_X, df_train_Y['26'].values)
+
+    print('Best score for training data:', knn.best_score_)
+    print('Best n_neighbors:',knn.best_estimator_.n_neighbors)
+    print('Best weights:',knn.best_estimator_.weights) 
+    print('Best algorithm:',knn.best_estimator_.algorithm)
+
+    final_model = knn.best_estimator_
+
+    predict = final_model.predict(df_valid_X)
     ground_true = df_valid_Y['Y'].values
 
     error = 0
@@ -129,14 +138,6 @@ if __name__ == "__main__":
         if v != ground_true[i]:
             error+=1
     print('ACC:', error/2063)
-    
-    y_pred_prob = forest.predict_proba(df_valid_X)
-    
-    for i in range(0, y_pred_prob.shape[0], 1):
-        for j in range(0, y_pred_prob.shape[1], 1):
-            if math.isnan(y_pred_prob[i][j]) and j == (predict[i] - 1):
-                y_pred_prob[i][j] = 1.0
-            elif math.isnan(y_pred_prob[i][j]) and j != (predict[i] - 1):
-                y_pred_prob[i][j] = 0.0
-    
+
+    y_pred_prob = final_model.predict_proba(df_valid_X)
     print('Log Loss:', log_loss(ground_true, y_pred_prob))

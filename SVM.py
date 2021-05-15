@@ -9,6 +9,9 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import ShuffleSplit
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.metrics import log_loss
+from sklearn.model_selection import cross_val_score, GridSearchCV
 
 def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None, n_jobs=None, train_sizes=np.linspace(.1, 1.0, 5)):
     """
@@ -101,33 +104,45 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None, n
     return plt
 
 if __name__ == "__main__":
-    df_train = pd.read_csv('train.csv')
+    df_train = pd.read_csv('Datasets/original/train.csv')
     df_train_X = df_train.drop(labels=["ID","TS","Y"], axis="columns")
     df_train_Y = df_train['Y'].to_frame()
 
-    df_valid = pd.read_csv('valid.csv')
+    df_valid = pd.read_csv('Datasets/original/valid.csv')
     df_valid_X = df_valid.drop(labels=["ID","TS","Y"], axis="columns")
     df_valid_Y = df_valid['Y'].to_frame()
-    
-    sc = StandardScaler()
-    sc.fit(df_train_X)
-    df_train_X_std = sc.transform(df_train_X)
-    df_valid_X_std = sc.transform(df_valid_X)
 
-    svm = OneVsRestClassifier(SVC(kernel='sigmoid', probability=True, random_state=0, C=5.0))
-    
+    params_grid = [ {'kernel': ['rbf', 'poly', 'sigmoid'], 'gamma': [1e-3, 1e-4], 'C': [1., 5., 10., 15.], 'probability': [True], 'random_state': [0]},
+                    {'kernel': ['linear', 'precomputed'], 'C': [1., 5., 10., 15.], 'probability': [True], 'random_state': [0]}]
+    svm = GridSearchCV(SVC(), params_grid, cv=5, n_jobs=-1)
+    '''
     cv = ShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
     fig, axes = plt.subplots(1, 1, figsize=(10, 15))
     title = r"Learning Curves (SVM)"
     plot_learning_curve(svm, title, df_train_X_std, df_train_Y['Y'].values, axes=axes, ylim=None, cv=cv, n_jobs=14)
     plt.show()
+    '''
+    svm.fit(df_train_X, df_train_Y['Y'].values)
+
+    print('Best score for training data:', svm.best_score_)
+    print('Best C:',svm.best_estimator_.C) 
+    print('Best Kernel:',svm.best_estimator_.kernel)
+    print('Best Gamma:',svm.best_estimator_.gamma)
+
+    final_model = svm.best_estimator_
+
+    # predict = final_model.predict(df_valid_X_std)
+    y_pred_prob = final_model.predict_proba(df_valid_X)
+    predict = np.argmax(y_pred_prob, axis=1)
+    for i in range(0, len(predict), 1):
+        predict[i] = predict[i] + 1
     
-    svm.fit(df_train_X_std, df_train_Y['Y'].values)
-    predict = svm.predict(df_valid_X_std)
     ground_true = df_valid_Y['Y'].values
     
     error = 0
     for i, v in enumerate(predict):
         if v != ground_true[i]:
             error+=1
-    print(error/2063)
+    print('ACC:', error/2063)
+
+    print('Log Loss:', log_loss(ground_true, y_pred_prob))

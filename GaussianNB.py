@@ -14,6 +14,7 @@ from sklearn.metrics import log_loss
 from sklearn.feature_selection import SelectFromModel
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LassoCV
+from sklearn.metrics import f1_score
 
 def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None, n_jobs=None, train_sizes=np.linspace(.1, 1.0, 5)):
     """
@@ -106,16 +107,17 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None, n
     return plt
 
 if __name__ == "__main__":
-    df_train = pd.read_csv('Datasets/norm/train.csv')
-    df_train_X = df_train.drop(labels=["ID","TS","Y"], axis="columns")
-    df_train_Y = df_train['Y'].to_frame()
+    df_train = pd.read_csv('Datasets/upsampled/upsampled_train_norm.csv')
+    df_train_X = df_train.drop(labels=["Unnamed: 0","0","1","26"], axis=1)
+    #df_train_X = df_train.drop(labels=["ID","TS","Y"], axis="columns")
+    df_train_Y = df_train['26'].to_frame()
 
     df_valid = pd.read_csv('Datasets/norm/valid.csv')
     df_valid_X = df_valid.drop(labels=["ID","TS","Y"], axis="columns")
     df_valid_Y = df_valid['Y'].to_frame()
 
     gnb = GaussianNB()
-    LCV = SelectFromModel(LassoCV(cv=5), prefit=False, threshold=0.04)
+    LCV = SelectFromModel(LassoCV(cv=5), prefit=False, threshold=0.01)
     gnb = Pipeline([('feature_selection', LCV), ('classification', gnb)])
     '''
     cv = ShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
@@ -124,7 +126,7 @@ if __name__ == "__main__":
     plot_learning_curve(gnb, title, df_train_X_std, df_train_Y['Y'].values, axes=axes, ylim=None, cv=cv, n_jobs=14)
     plt.show()
     '''
-    gnb.fit(df_train_X, df_train_Y['Y'].values)
+    gnb.fit(df_train_X, df_train_Y['26'].values)
     print(df_train_X.columns[LCV.get_support()])
     predict = gnb.predict(df_valid_X)
     ground_true = df_valid_Y['Y'].values
@@ -133,7 +135,10 @@ if __name__ == "__main__":
     for i, v in enumerate(predict):
         if v != ground_true[i]:
             error+=1
-    print('ACC:', error/2063)
+    print('ACC:', (2063-error)/2063)
 
     y_pred_prob = gnb.predict_proba(df_valid_X)
     print('Log Loss:', log_loss(ground_true, y_pred_prob))
+    
+    f1 = f1_score(ground_true, predict, average='macro')
+    print('F1 Score:', f1)

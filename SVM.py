@@ -95,12 +95,12 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None, n
     return plt
 
 if __name__ == "__main__":
-    df_train = pd.read_csv('Datasets/norm/train.csv')
+    df_train = pd.read_csv('Datasets/original/train.csv')
     #df_train_X = df_train.drop(labels=["Unnamed: 0","0","1","26"], axis=1)
     df_train_X = df_train.drop(labels=["ID","TS","Y"], axis="columns")
     df_train_Y = df_train['Y'].to_frame()
 
-    df_valid = pd.read_csv('Datasets/norm/valid.csv')
+    df_valid = pd.read_csv('Datasets/original/valid.csv')
     df_valid_X = df_valid.drop(labels=["ID","TS","Y"], axis="columns")
     df_valid_Y = df_valid['Y'].to_frame()
 

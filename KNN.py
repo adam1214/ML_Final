@@ -108,20 +108,20 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None, n
     return plt
 
 if __name__ == "__main__":
-    df_train = pd.read_csv('Datasets/upsampled/upsampled_train_norm.csv')
-    df_train_X = df_train.drop(labels=["Unnamed: 0","0","1","26"], axis=1)
-    #df_train_X = df_train.drop(labels=["ID","TS","Y"], axis="columns")
-    df_train_Y = df_train['26'].to_frame()
+    df_train = pd.read_csv('Datasets/original/train.csv')
+    #df_train_X = df_train.drop(labels=["Unnamed: 0","0","1","26"], axis=1)
+    df_train_X = df_train.drop(labels=["ID","TS","Y"], axis="columns")
+    df_train_Y = df_train['Y'].to_frame()
 
-    df_valid = pd.read_csv('Datasets/norm/valid.csv')
+    df_valid = pd.read_csv('Datasets/original/valid.csv')
     df_valid_X = df_valid.drop(labels=["ID","TS","Y"], axis="columns")
     df_valid_Y = df_valid['Y'].to_frame()
 
-    params_grid = [ {'n_neighbors': [5, 10, 15, 20, 25, 30, 35], 'weights': ['distance'], 'algorithm': ['auto']}]
-    #knn = GridSearchCV(KNeighborsClassifier(), params_grid, cv=5, n_jobs=12)
-    knn = KNeighborsClassifier(n_neighbors=4, weights='distance', algorithm='auto')
-    LCV = SelectFromModel(LassoCV(cv=5), prefit=False, threshold=0.05)
-    knn_pipeline = Pipeline([('feature_selection', LCV), ('classification', knn)])
+    #params_grid = [ {'n_neighbors': [5, 10, 15, 20, 25, 30, 35], 'weights': ['distance'], 'algorithm': ['auto']}]
+    #knn = GridSearchCV(KNeighborsClassifier(), params_grid, cv=5, n_jobs=10)
+    knn = KNeighborsClassifier(n_neighbors=10, weights='distance', algorithm='auto')
+    #LCV = SelectFromModel(LassoCV(cv=5), prefit=False, threshold=0.05)
+    #knn_pipeline = Pipeline([('feature_selection', LCV), ('classification', knn)])
     '''
     cv = ShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
     fig, axes = plt.subplots(1, 1, figsize=(10, 15))
@@ -129,8 +129,8 @@ if __name__ == "__main__":
     plot_learning_curve(gnb, title, df_train_X_std, df_train_Y['Y'].values, axes=axes, ylim=None, cv=cv, n_jobs=14)
     plt.show()
     '''
-    knn_pipeline.fit(df_train_X, df_train_Y['26'].values)
-    print(df_train_X.columns[LCV.get_support()])
+    knn.fit(df_train_X, df_train_Y['Y'].values)
+    #print(df_train_X.columns[LCV.get_support()])
     '''
     print('Best score for training data:', knn.best_score_)
     print('Best n_neighbors:',knn.best_estimator_.n_neighbors)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     
     final_model = knn.best_estimator_
     '''
-    predict = knn_pipeline.predict(df_valid_X)
+    predict = knn.predict(df_valid_X)
     ground_true = df_valid_Y['Y'].values
 
     error = 0
@@ -148,7 +148,7 @@ if __name__ == "__main__":
             error+=1
     print('ACC:', (2063-error)/2063)
 
-    y_pred_prob = knn_pipeline.predict_proba(df_valid_X)
+    y_pred_prob = knn.predict_proba(df_valid_X)
     print('Log Loss:', log_loss(ground_true, y_pred_prob))
     
     f1 = f1_score(ground_true, predict, average='macro')

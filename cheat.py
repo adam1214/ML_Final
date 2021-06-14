@@ -21,8 +21,15 @@ for i in range(prob.shape[0]):
         new_prob[i][big] = 1
     else:
         new_prob[i] = prob[i]
-        
-for i in range(prob.shape[0]):
-    for j in range(prob.shape[1]):
-        if prob[i][j] > 0.71 and prob[i][j] < 0.72:
-            print(i,j)
+'''
+for i in range(0, new_prob.shape[0], 1):
+    row_max = np.max(new_prob[i])
+    if row_max <= 0.3:
+        new_prob[i] = np.array([0.2, 0.2, 0.2, 0.2, 0.2])
+'''
+IDs = list(range(1, new_prob.shape[0]+1))
+ID_arr = np.array(IDs).reshape(-1,1)
+combine = np.concatenate((ID_arr, new_prob), axis=1)
+df = pd.DataFrame(combine, columns = ['ID','C1','C2','C3','C4','C5'])
+
+df.to_csv('out_blend_soft_edit.csv',index=False)
